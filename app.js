@@ -1,51 +1,59 @@
 const util = require('util');
 const Modbus = require('modbus-serial');
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
 module.exports = function(plugin)  {
   const params = plugin.params;
   let extraChannels = plugin.extraChannels;
-  const coilBuffer = Buffer.alloc(131070, 0);
-  const discreteBuffer = Buffer.alloc(131070, 0);
-  const inputBuffer = Buffer.alloc(131070, 0);
-  const holdingBuffer = Buffer.alloc(1000, 0);
+  const coilBuffer = Buffer.alloc(8192, 0);
+  const discreteBuffer = Buffer.alloc(8192, 0);
+  const inputBuffer = Buffer.alloc(131072, 0);
+  const holdingBuffer = Buffer.alloc(131072, 0);
   const bufferFactor = 2;
   let setCnt = 0;
-  let varLength = 1;
+  let varLength = 0;
   let setBuf = Buffer.alloc(8,0);
-  let did, prop, vartype, address;
-  const filter = filterExtraChannels(extraChannels);
-  plugin.log('ExtraChannels' + util.inspect(filter));
-  plugin.onSub('devices', filter, data => {
-    data.forEach(item => {
-      if (filter[item.did].fcr == '1') {
-        writeBuffer(coilBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
-      }
-      if (filter[item.did].fcr == '2') {
-        writeBuffer(discreteBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
-      }
-      if (filter[item.did].fcr == '3') {
-        writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
-        //plugin.log("buf" + holdingBuffer.toString('hex'));
-      }
-      if (filter[item.did].fcr == '4') {
-        writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
-      }
-    });
-    plugin.log("data" + util.inspect(data));
-  })
+  let did, prop, vartype;
+  let filter = filterExtraChannels(extraChannels)
+  subExtraChannels(filter);
+
+  function subExtraChannels(filter) {
+    plugin.onSub('devices', filter, data => {
+      data.forEach(item => {
+        if (filter[item.did].fcr == '1') {
+          setBit(coilBuffer, filter[item.did].address, item.value);
+        }
+        if (filter[item.did].fcr == '2') {
+          setBit(discreteBuffer, filter[item.did].address, item.value);
+        }
+        if (filter[item.did].fcr == '3') {
+          writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
+          //plugin.log("buf" + holdingBuffer.toString('hex'));
+        }
+        if (filter[item.did].fcr == '4') {
+          writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params);
+        }
+      });
+      plugin.log("data" + util.inspect(data));
+    })
+  }
+  
+  plugin.onChange('extra', async (recs) => {
+    plugin.log('onChange addExtra '+util.inspect(recs), 2);
+    extraChannels = await plugin.extra.get();
+    filter = filterExtraChannels(extraChannels)
+    subExtraChannels(filter);
+  });
 
   const vector = {
     getCoil: function(addr, unitId) { 
       if (params.unitID == unitId) { 
-        return coilBuffer.readUInt8(addr * bufferFactor); 
+        return getBit(coilBuffer, addr);
       } 
     },
 
     getDiscreteInput: function(addr, unitId) { 
       if (params.unitID == unitId ) { 
-        return discreteBuffer.readUInt8(addr * bufferFactor); 
+        return getBit(discreteBuffer, addr); 
       } 
     },
     
@@ -54,49 +62,55 @@ module.exports = function(plugin)  {
         return inputBuffer.readUInt16BE(addr * bufferFactor); 
       } 
     },
-    getMultipleInputRegister: function(addr, unitId) { 
-      let arr = [];
+
+    getMultipleInputRegister: function(addr, unitId) {   
       if (params.unitID == unitId ) { 
+        let arr = [];
         for (i=addr; i<addr+length; i++) {
           arr.push(inputBuffer.readUInt16BE(i * bufferFactor));
         }
         return arr 
       }
      },
+
     getHoldingRegister: function(addr, unitId) { 
       if (params.unitID == unitId ) { 
         return holdingBuffer.readUInt16BE(addr * bufferFactor); 
       } 
     },
+
     getMultipleHoldingRegisters: function(addr, length,  unitId) {
-      let arr = [];
-      if (params.unitID == unitId ) { 
+      if (params.unitID == unitId ) {
+        let arr = [];
         for (i=addr; i<addr+length; i++) {
           arr.push(holdingBuffer.readUInt16BE(i * bufferFactor))
         }
         return arr 
-      }
-      
+      }  
     },
 
-    setCoil: function(addr, value, unitId) { 
+    setCoil: function(address, value, unitId) { 
+      const addr = '1.' + address;
+      plugin.log('SetCoil' + addr + ' value: '+ value + ' unitId: ' + unitId, 2);  
       if (params.unitID == unitId ) { 
-        coilBuffer.writeUInt8(value, addr * bufferFactor); 
+        setBit(coilBuffer, address, value);
+        if (filter[addr] != undefined) {
+          plugin.log('SetCoil' + filter[addr].did + ' value: '+ value + ' unitId: ' + unitId, 2); 
+          plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: value == true ? 1 : 0 });
+        }  
       } 
     },
 
-    setRegister: function(addr, value, unitId) { 
-      
-   
+    setRegister: function(address, value, unitId) { 
+      const addr = '3.' + address;
+      plugin.log('SetRegister ' + addr + ' value: '+ value + ' unitId: ' + unitId, 2);  
       if (params.unitID == unitId ) { 
-        plugin.log('SetRegister ' + util.inspect(filter[addr]));
         if (filter[addr] != undefined && (filter[addr].vartype == 'bool' || filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16' || filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8')) {
           varLength = 1;
           setCnt = 0;
           vartype = filter[addr].vartype;
           did = filter[addr].did;
           prop = filter[addr].prop;
-          address = addr;
         }
         if (filter[addr] != undefined && (filter[addr].vartype == 'float' || filter[addr].vartype == 'int32' || filter[addr].vartype == 'uint32')) {
           varLength = 2;
@@ -104,7 +118,6 @@ module.exports = function(plugin)  {
           vartype = filter[addr].vartype;
           did = filter[addr].did;
           prop = filter[addr].prop;
-          address = addr;
         }
         if (filter[addr] != undefined && (filter[addr].vartype == 'double' || filter[addr].vartype == 'int64' || filter[addr].vartype == 'uint64')) {
           varLength = 4;
@@ -112,7 +125,6 @@ module.exports = function(plugin)  {
           vartype = filter[addr].vartype;
           did = filter[addr].did;
           prop = filter[addr].prop;
-          address = addr;
         }
         
         if (varLength == 2) {
@@ -122,51 +134,39 @@ module.exports = function(plugin)  {
             if (vartype == 'float') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readFloatBE(0) });
             if (vartype == 'int32') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readInt32BE(0) });
             if (vartype == 'uint32') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint32BE(0) });
-            setBuf.copy(holdingBuffer, address * 2, 0, 4);
+            varLength = 0;
           }
         }
         
         if (varLength == 4) {
-          plugin.log("addr" + addr * bufferFactor + ' ' + value + ' ' + unitId);
-          setBuf.writeUInt16BE(value,setCnt * 2);  
-          plugin.log("buf" + setBuf.toString('hex'));
+          setBuf.writeUInt16BE(value,setCnt * 2);   
           setCnt++;
           if (setCnt == 4) {
-            if (vartype == 'double') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readDoubleBE(0) });
-            if (vartype == 'int64') {
-              let value;
-              const i1 = setBuf.readInt32BE(0);
-              const i2 = setBuf.readUInt32BE(4);
-              if (i1 >= 0)  value = i1 * 0x100000000 + i2; else value = i1 * 0x100000000 - i2;
-              plugin.send({ type: 'command', command: 'setval', did, prop, value: value});
-            }
-            if (vartype == 'uint64') {
-              plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUInt32BE(0) * 0x100000000 + setBuf.readUInt32BE(4) });
-            }
-            setBuf.copy(holdingBuffer, address * 2, 0, 8);
+            if (vartype == 'double') plugin.send({ type: 'command', command: 'setval', did, prop, value: Number(setBuf.readDoubleBE(0)) });
+            if (vartype == 'int64') plugin.send({ type: 'command', command: 'setval', did, prop, value: Number(setBuf.readBigInt64BE(0)) });
+            if (vartype == 'uint64') plugin.send({ type: 'command', command: 'setval', did, prop, value: Number(setBuf.readBigUInt64BE(0)) });
+            varLength = 0;
           }
 
         }
 
         if (varLength == 1) {
-          if (vartype == 'bool') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint8(0) });
-          if (vartype == 'int8') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readInt8(0) });
-          if (vartype == 'uint8') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint8(0) });
+          setBuf.writeUInt16BE(value, 0);
+          if (vartype == 'int8') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readInt8(1) });
+          if (vartype == 'uint8') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint8(1) });
           if (vartype == 'int16') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readInt16BE(0) });
           if (vartype == 'uint16') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint16BE(0) }); 
-          holdingBuffer.writeUInt16BE(value, addr * bufferFactor); 
-        }
-
-        
-        
+          varLength = 0;
+        }    
+        holdingBuffer.writeUInt16BE(value, address * bufferFactor);     
       } 
       
     }
   };
 
   // set the server to answer for modbus requests
-  plugin.log(`ModbusTCP unitID ${params.unitID} listening on ${params.host}:${params.port}`);
-  const serverTCP = new Modbus.ServerTCP(vector, { host: params.host, port: parseInt(params.port), debug: true, unitID: parseInt(params.unitID) });
+  plugin.log(`ModbusTCP unitID ${params.unitID} listening on '0.0.0.0':${params.port}`);
+  const serverTCP = new Modbus.ServerTCP(vector, { host: '0.0.0.0', port: parseInt(params.port), debug: true, unitID: parseInt(params.unitID) });
 
   serverTCP.on("socketError", function(err) {
       plugin.log("socketError " +err);
@@ -193,23 +193,32 @@ module.exports = function(plugin)  {
   channels.forEach(item => {
     res.did_prop.push(item.did+"."+item.prop);
     res[item.did] = item;
-    res[item.address] = item;
+    res[item.fcr+'.'+item.address] = item;
   })
   return res
   }
+
+  function getBit(buffer, offset) {
+    // Приходит упакованное побайтно
+    const i = Math.floor(offset / 8);
+    const j = offset % 8;
   
+    return buffer[i] & (1 << j) ? 1 : 0;
+  }
+
+  function setBit(buffer, offset, value){
+    const i = Math.floor(offset / 8);
+    const bit = offset % 8;
+    if(value == 0){
+      buffer[i] &= ~(1 << bit);
+    }else{
+      buffer[i] |= (1 << bit);
+    }
+  }
   function writeBuffer(buf, address, vartype, value, params) {
-    let a0;
-    let a1;
-    let a2;
     let buffer;
   
     switch (vartype) {
-      case 'bool':
-        buffer = Buffer.alloc(2);
-        buffer[0] = 0;
-        buffer.writeUInt8(value & 0xff, 1);
-        break;
       case 'uint8':
         buffer = Buffer.alloc(2);
         buffer[0] = 0;
@@ -241,13 +250,11 @@ module.exports = function(plugin)  {
         break;
       case 'uint64':
         buffer = Buffer.alloc(8);
-        buffer.writeUInt32BE(value >> 32, 0);
-        buffer.writeUInt32BE(value & 0xffffffff, 4);
+        buffer.writeBigUInt64BE(BigInt(value), 0);
         break;
       case 'int64':
         buffer = Buffer.alloc(8);
-        buffer.writeInt32BE(value >> 32, 0);
-        buffer.writeUInt32BE(value & 0xffffffff, 4);
+        buffer.writeBigInt64BE(BigInt(value), 0);
         break;
       case 'float':
         buffer = Buffer.alloc(4);
