@@ -13,7 +13,7 @@ module.exports = function(plugin)  {
   let varLength = 0;
   let setBuf = Buffer.alloc(8,0);
   let did, prop, vartype;
-  let filter = filterExtraChannels(extraChannels)
+  let filter = filterExtraChannels(extraChannels);
   subExtraChannels(filter);
 
   function subExtraChannels(filter) {
@@ -91,7 +91,6 @@ module.exports = function(plugin)  {
 
     setCoil: function(address, value, unitId) { 
       const addr = '1.' + address;
-      plugin.log('SetCoil' + addr + ' value: '+ value + ' unitId: ' + unitId, 2);  
       if (params.unitID == unitId ) { 
         setBit(coilBuffer, address, value);
         if (filter[addr] != undefined) {
@@ -103,6 +102,7 @@ module.exports = function(plugin)  {
 
     setRegister: function(address, value, unitId) { 
       const addr = '3.' + address;
+      holdingBuffer.writeUInt16BE(value, address * bufferFactor);
       plugin.log('SetRegister ' + addr + ' value: '+ value + ' unitId: ' + unitId, 2);  
       if (params.unitID == unitId ) { 
         if (filter[addr] != undefined && (filter[addr].vartype == 'bool' || filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16' || filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8')) {
@@ -118,6 +118,7 @@ module.exports = function(plugin)  {
           vartype = filter[addr].vartype;
           did = filter[addr].did;
           prop = filter[addr].prop;
+          plugin.log("vartype: " + vartype);
         }
         if (filter[addr] != undefined && (filter[addr].vartype == 'double' || filter[addr].vartype == 'int64' || filter[addr].vartype == 'uint64')) {
           varLength = 4;
@@ -129,12 +130,14 @@ module.exports = function(plugin)  {
         
         if (varLength == 2) {
           setBuf.writeUInt16BE(value,setCnt * 2);
+          
           setCnt++;
           if (setCnt == 2) {
             if (vartype == 'float') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readFloatBE(0) });
             if (vartype == 'int32') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readInt32BE(0) });
             if (vartype == 'uint32') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint32BE(0) });
             varLength = 0;
+            
           }
         }
         
@@ -158,7 +161,8 @@ module.exports = function(plugin)  {
           if (vartype == 'uint16') plugin.send({ type: 'command', command: 'setval', did, prop, value: setBuf.readUint16BE(0) }); 
           varLength = 0;
         }    
-        holdingBuffer.writeUInt16BE(value, address * bufferFactor);     
+        //holdingBuffer.writeUInt16BE(value, address * bufferFactor); 
+        return;
       } 
       
     }

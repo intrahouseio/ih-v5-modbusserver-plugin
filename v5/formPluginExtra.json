@@ -94,7 +94,7 @@
          },
          {
             "prop": "fcr",
-            "title": "$fcr",
+            "title": "$fcr_type",
             "type": "droplist",
             "data": [
               {

@@ -14,6 +14,7 @@
     "address":"Address (dec or hex)",
     "vartype":"Type",
     "fcr":"Modbus functions",
+    "fcr_type":"Modbus variable type",
     "offset":"Offset",
     "gr":"Allow reading of address range",
     "grman":"Manual group of address range",
