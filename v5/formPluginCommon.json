@@ -2,6 +2,7 @@
   "grid": [
     { "id": "p1", "xs": 6, "class": "main", "table": "units" },
     { "id": "p3", "xs": 6, "class": "main", "table": "units" },
+    { "id": "p4", "xs": 12, "class": "main", "table": "units" },
     { "id": "p9", "xs": 12, "class": "main", "table": "unitsTreeTable", "height": "fill" }
   ],
 
@@ -42,6 +43,80 @@
       "default":"* * * * *"
     },
     { "prop": "txt", "title": "$Comment", "type": "input" }
+  ],
+  "p4": [
+    {
+      "prop": "bo8",
+      "title": "$bo8",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "be",
+          "title": "Big-Endian, В0 => B0"
+        },
+        {
+          "id": "le",
+          "title": "Little-Endian, В0 => 0B"
+        }
+      ],
+      "default": "be"
+    },
+    {
+      "prop": "bo16",
+      "title": "$bo16",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "be",
+          "title": "Big-Endian, В1B2 => B1B2"
+        },
+        {
+          "id": "le",
+          "title": "Little-Endian, В1B2 => B2B1"
+        }
+      ],
+      "default": "be"
+    },
+    {
+      "prop": "bo32",
+      "title": "$bo32",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "be",
+          "title": "Big-Endian, B1B2B3B4 => B1B2B3B4"
+        },
+        {
+          "id": "sw",
+          "title": "Big-Endian, swap B1B2B3B4 => B3B4B1B2"
+        },
+        {
+          "id": "le",
+          "title": "Little-Endian, B1B2B3B4 => B4B3B2B1"
+        },
+        {
+          "id": "sb",
+          "title": "Little-Endian, swap B1B2B3B4 => B2B1B4B3"
+        }
+      ],
+      "default": "sw"
+    },
+    {
+      "prop": "bo64",
+      "title": "$bo64",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "be",
+          "title": "Big-Endian, B1B2B3B4B5B6B7B8 => B1B2B3B4B5B6B7B8"
+        },
+        {
+          "id": "le",
+          "title": "Little-Endian, B1B2B3B4B5B6B7B8 => B8B7B6B5B4B3B2B1"
+        }
+      ],
+      "default": "be"
+    }
   ],
 
   "p9": [

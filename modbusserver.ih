@@ -2,5 +2,5 @@
     "id":"modbusserver",
     "description":"Modbus server plugin",
     "cross":true,
-	"version":"5.5.3"
+	"version":"5.5.4"
 }
