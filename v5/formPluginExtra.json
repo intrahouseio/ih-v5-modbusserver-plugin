@@ -53,42 +53,42 @@
       
               {
                 "id": "int16",
-                "title": "INT16, 2 байта"
+                "title": "INT16, 1 слово"
               },
       
               {
                 "id": "uint16",
-                "title": "UINT16, 2 байта"
+                "title": "UINT16, 1 слово"
               },
       
               {
                 "id": "int32",
-                "title": "INT32, 4 байта"
+                "title": "INT32, 2 слова"
               },
       
               {
                 "id": "uint32",
-                "title": "UINT32, 4 байта"
+                "title": "UINT32, 2 слова"
               },
       
               {
                 "id": "int64",
-                "title": "INT64, 8 байт"
+                "title": "INT64, 4 слова"
               },
       
               {
                 "id": "uint64",
-                "title": "UINT64, 8 байт"
+                "title": "UINT64, 4 слова"
               },
       
               {
                 "id": "float",
-                "title": "FLOAT, 4 байта"
+                "title": "FLOAT, 2 слова"
               },
       
               {
                 "id": "double",
-                "title": "DOUBLE, 8 байт"
+                "title": "DOUBLE, 4 слова"
               }
             ]
          },

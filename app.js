@@ -15,45 +15,46 @@ module.exports = function (plugin) {
   function subExtraChannels(filter) {
     plugin.onSub('devices', filter, data => {
       data.forEach(item => {
-        if (filter[item.did].fcr == '1') {
-          setBit(coilBuffer, filter[item.did].address, item.value);
+        let curitem = item.did + '.' + item.prop;
+        if (filter[curitem].fcr == '1') {
+          setBit(coilBuffer, filter[curitem].address, item.value);
         }
 
-        if (filter[item.did].fcr == '2') {
-          setBit(discreteBuffer, filter[item.did].address, item.value);
+        if (filter[curitem].fcr == '2') {
+          setBit(discreteBuffer, filter[curitem].address, item.value);
         }
 
-        if (filter[item.did].fcr == '3') {
-          if (filter[item.did].vartype == 'int8' || filter[item.did].vartype == 'uint8') {
-            writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo8);
+        if (filter[curitem].fcr == '3') {
+          if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
+            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
           }
-          if (filter[item.did].vartype == 'int16' || filter[item.did].vartype == 'uint16') {
-            writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo16);
+          if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
+            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
           }
-          if (filter[item.did].vartype == 'float' || filter[item.did].vartype == 'int32' || filter[item.did].vartype == 'uint32') {
-            writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo32);
+          if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
+            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
           }
-          if (filter[item.did].vartype == 'double' || filter[item.did].vartype == 'int64' || filter[item.did].vartype == 'uint64') {
-            writeBuffer(holdingBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo64);
+          if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
+            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
           } 
         }
         
-        if (filter[item.did].fcr == '4') {
-          if (filter[item.did].vartype == 'int8' || filter[item.did].vartype == 'uint8') {
-            writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo8);
+        if (filter[curitem].fcr == '4') {
+          if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
+            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
           }
-          if (filter[item.did].vartype == 'int16' || filter[item.did].vartype == 'uint16') {
-            writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo16);
+          if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
+            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
           }
-          if (filter[item.did].vartype == 'float' || filter[item.did].vartype == 'int32' || filter[item.did].vartype == 'uint32') {
-            writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo32);
+          if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
+            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
           }
-          if (filter[item.did].vartype == 'double' || filter[item.did].vartype == 'int64' || filter[item.did].vartype == 'uint64') {
-            writeBuffer(inputBuffer, filter[item.did].address, filter[item.did].vartype, item.value, params.bo64);
+          if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
+            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
           } 
         }
       });
-      plugin.log("data" + util.inspect(data));
+      plugin.log("data" + util.inspect(data), 2);
     })
   }
 
@@ -110,11 +111,11 @@ module.exports = function (plugin) {
     },
 
     setCoil: function (address, value, unitId) {
-      const addr = '1.' + address;
+      plugin.log('SetCoil' + filter[addr].did + ' value: ' + value + ' unitId: ' + unitId, 2);
       if (params.unitID == unitId) {
+        const addr = '1.' + address;
         setBit(coilBuffer, address, value);
         if (filter[addr] != undefined) {
-          plugin.log('SetCoil' + filter[addr].did + ' value: ' + value + ' unitId: ' + unitId, 2);
           plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: value == true ? 1 : 0 });
         }
       }
@@ -190,7 +191,7 @@ module.exports = function (plugin) {
     let res = { did_prop: [] };
     channels.forEach(item => {
       res.did_prop.push(item.did + "." + item.prop);
-      res[item.did] = item;
+      res[item.did + '.' + item.prop] = item;
       res[item.fcr + '.' + item.address] = item;
     })
     return res
