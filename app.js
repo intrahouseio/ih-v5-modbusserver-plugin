@@ -111,9 +111,9 @@ module.exports = function (plugin) {
     },
 
     setCoil: function (address, value, unitId) {
-      plugin.log('SetCoil' + filter[addr].did + ' value: ' + value + ' unitId: ' + unitId, 2);
       if (params.unitID == unitId) {
         const addr = '1.' + address;
+        plugin.log('SetCoil' + filter[addr].did + ' value: ' + value + ' unitId: ' + unitId, 2);
         setBit(coilBuffer, address, value);
         if (filter[addr] != undefined) {
           plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: value == true ? 1 : 0 });
