@@ -168,13 +168,8 @@ module.exports = function (plugin) {
   const serverTCP = new Modbus.ServerTCP(vector, { host: '0.0.0.0', port: parseInt(params.port), debug: true, unitID: parseInt(params.unitID) });
 
   serverTCP.on("socketError", function (err) {
-    plugin.log("socketError " + err);
-    serverTCP.close(closed);
+    plugin.log("socketError " + err, 1);
   });
-
-  function closed() {
-    plugin.log("server closed");
-  }
 
   process.on('exit', terminate);
   process.on('SIGTERM', () => {
