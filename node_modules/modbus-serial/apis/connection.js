@@ -15,17 +15,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF  THIS SOFTWARE.
  */
 
-var MIN_MODBUSRTU_FRAMESZ = 5;
+const MIN_MODBUSRTU_FRAMESZ = 5;
 
 /**
  * Adds connection shorthand API to a Modbus objext
  *
  * @param {ModbusRTU} Modbus the ModbusRTU object.
  */
-var addConnctionAPI = function(Modbus) {
-    var cl = Modbus.prototype;
+const addConnctionAPI = function(Modbus) {
+    const cl = Modbus.prototype;
 
-    var open = function(obj, next) {
+    const open = function(obj, next) {
         /* the function check for a callback
          * if we have a callback, use it
          * o/w build a promise.
@@ -57,6 +57,11 @@ var addConnctionAPI = function(Modbus) {
      * @param {Function} next the function to call next.
      */
     cl.connectRTU = function(path, options, next) {
+        if (options) {
+            this._enron = options.enron;
+            this._enronTables = options.enronTables;
+        }
+
         // check if we have options
         if (typeof next === "undefined" && typeof options === "function") {
             next = options;
@@ -74,8 +79,8 @@ var addConnctionAPI = function(Modbus) {
         options.platformOptions = { vmin: MIN_MODBUSRTU_FRAMESZ, vtime: 0 };
 
         // create the SerialPort
-        var SerialPort = require("serialport");
-        this._port = new SerialPort(path, options);
+        const SerialPort = require("serialport").SerialPort;
+        this._port = new SerialPort(Object.assign({}, { path }, options));
 
         // open and call next
         return open(this, next);
@@ -85,10 +90,15 @@ var addConnctionAPI = function(Modbus) {
      * Connect to a communication port, using TcpPort.
      *
      * @param {string} ip the ip of the TCP Port - required.
-     * @param {Object} options - the serial port options - optional.
+     * @param {Object} options - the TCP port options - optional.
      * @param {Function} next the function to call next.
      */
     cl.connectTCP = function(ip, options, next) {
+        if (options) {
+            this._enron = options.enron;
+            this._enronTables = options.enronTables;
+        }
+
         // check if we have options
         if (typeof next === "undefined" && typeof options === "function") {
             next = options;
@@ -101,7 +111,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the TcpPort
-        var TcpPort = require("../ports/tcpport");
+        const TcpPort = require("../ports/tcpport");
         if (this._timeout) {
             options.timeout = this._timeout;
         }
@@ -162,7 +172,7 @@ var addConnctionAPI = function(Modbus) {
             options = {};
         }
 
-        var TcpRTUBufferedPort = require("../ports/tcprtubufferedport");
+        const TcpRTUBufferedPort = require("../ports/tcprtubufferedport");
         if (this._timeout) {
             options.timeout = this._timeout;
         }
@@ -216,7 +226,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the TcpPort
-        var TelnetPort = require("../ports/telnetport");
+        const TelnetPort = require("../ports/telnetport");
         if (this._timeout) {
             options.timeout = this._timeout;
         }
@@ -270,7 +280,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the TcpPort
-        var C701Port = require("../ports/c701port");
+        const C701Port = require("../ports/c701port");
         this._port = new C701Port(ip, options);
 
         // open and call next
@@ -297,7 +307,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the UdpPort
-        var UdpPort = require("../ports/udpport");
+        const UdpPort = require("../ports/udpport");
         this._port = new UdpPort(ip, options);
 
         // open and call next
@@ -312,6 +322,11 @@ var addConnctionAPI = function(Modbus) {
      * @param {Function} next the function to call next.
      */
     cl.connectRTUBuffered = function(path, options, next) {
+        if (options) {
+            this._enron = options.enron;
+            this._enronTables = options.enronTables;
+        }
+
         // check if we have options
         if (typeof next === "undefined" && typeof options === "function") {
             next = options;
@@ -324,7 +339,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the SerialPort
-        var SerialPort = require("../ports/rtubufferedport");
+        const SerialPort = require("../ports/rtubufferedport");
         this._port = new SerialPort(path, options);
 
         // set vmin to smallest modbus packet size
@@ -354,7 +369,7 @@ var addConnctionAPI = function(Modbus) {
         }
 
         // create the ASCII SerialPort
-        var SerialPortAscii = require("../ports/asciiport");
+        const SerialPortAscii = require("../ports/asciiport");
         this._port = new SerialPortAscii(path, options);
 
         // open and call next
@@ -375,6 +390,35 @@ var addConnctionAPI = function(Modbus) {
             thisModbus._port.isOpen = true;
             callback();
         };
+
+        // open and call next
+        return open(this, next);
+    };
+
+    /**
+     * Connect to existing client socket.
+     *
+     * @param {socket} socket the socket to connect to - required.
+     * @param {Function} next the function to call next.
+     */
+    cl.connectBle = function(options, next) {
+        // check if we have options
+        if (typeof next === "undefined" && typeof options === "function") {
+            next = options;
+            options = {};
+        }
+
+        // check if we have options
+        if (typeof options === "undefined") {
+            options = {};
+        }
+
+        // create the TcpPort
+        const BlePort = require("../ports/bleport");
+        if (this._timeout) {
+            options.timeout = this._timeout;
+        }
+        this._port = new BlePort(options);
 
         // open and call next
         return open(this, next);

@@ -11,12 +11,122 @@
 
   "p1": [
     {
+      "prop": "transport",
+      "title": "$transport",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "tcp",
+          "title": "Modbus TCP"
+        },
+        {
+          "id": "rtu",
+          "title": "Modbus RTU"
+        }
+      ],
+      "default": "tcp"
+    },
+    {
       "prop": "port",
       "title": "$port",
       "type": "input",
-      "default": "502"
+      "default": "502",
+      "hide": "!data.p1.transport.id || data.p1.transport.id == \"rtu\" || data.p1.transport.id == \"ascii\""
+    },
+    {
+      "prop": "serialport",
+      "title": "$port",
+      "type": "input",
+      "data": "/dev/ttyUSB1",
+      "hide": "!data.p1.transport.id || (data.p1.transport.id !== \"rtu\" && data.p1.transport.id !== \"ascii\")"
     },
 
+    {
+      "prop": "baudRate",
+      "title": "$baudRate",
+      "type": "droplist",
+      "data": [
+        {
+          "id": 300,
+          "title": "300"
+        },
+        {
+          "id": 600,
+          "title": "600"
+        },
+        {
+          "id": 1200,
+          "title": "1200"
+        },
+        {
+          "id": 2400,
+          "title": "2400"
+        },
+        {
+          "id": 4800,
+          "title": "4800"
+        },
+        {
+          "id": 9600,
+          "title": "9600"
+        },
+        {
+          "id": 19200,
+          "title": "19200"
+        },
+        {
+          "id": 38400,
+          "title": "38400"
+        },
+        {
+          "id": 57600,
+          "title": "57600"
+        },
+        {
+          "id": 115200,
+          "title": "115200"
+        }
+      ],
+      "default": 9600,
+      "hide": "!data.p1.transport.id || (data.p1.transport.id !== \"rtu\" && data.p1.transport.id !== \"ascii\")"
+    },
+    {
+      "prop": "parity",
+      "title": "$parity",
+      "type": "droplist",
+      "data": [
+        {
+          "id": "none",
+          "title": "none"
+        },
+        {
+          "id": "even",
+          "title": "even"
+        },
+        {
+          "id": "odd",
+          "title": "odd"
+        }
+      ],
+      "default": "even",
+      "hide": "!data.p1.transport.id || (data.p1.transport.id !== \"rtu\" && data.p1.transport.id !== \"ascii\")"
+    },
+
+    {
+      "prop": "dataBits",
+      "title": "$dataBits",
+      "default": 8,
+      "type": "number",
+      "hide": "!data.p1.transport.id || (data.p1.transport.id !== \"rtu\" && data.p1.transport.id !== \"ascii\")"
+    },
+
+    {
+      "prop": "stopBits",
+      "title": "$stopBits",
+      "default": 1,
+      "type": "number",
+      "hide": "!data.p1.transport.id || (data.p1.transport.id !== \"rtu\" && data.p1.transport.id !== \"ascii\")"
+    },
     {
       "prop": "unitID",
       "title": "unitID",

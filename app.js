@@ -164,12 +164,41 @@ module.exports = function (plugin) {
   };
 
   // set the server to answer for modbus requests
-  plugin.log(`ModbusTCP unitID ${params.unitID} listening on '0.0.0.0':${params.port}`);
-  const serverTCP = new Modbus.ServerTCP(vector, { host: '0.0.0.0', port: parseInt(params.port), debug: true, unitID: parseInt(params.unitID) });
+  if (params.transport == 'tcp' || params.transport == undefined) {
+    plugin.log(`ModbusTCP unitID ${params.unitID} listening on '0.0.0.0':${params.port}`);
+    const serverTCP = new Modbus.ServerTCP(vector, { host: '0.0.0.0', port: parseInt(params.port), debug: true, unitID: parseInt(params.unitID) });
 
-  serverTCP.on("socketError", function (err) {
-    plugin.log("socketError " + err, 1);
-  });
+    serverTCP.on("socketError", function (err) {
+      plugin.log("socketError " + err, 1);
+    });
+  }
+  if (params.transport == 'rtu') {
+    const serverSerial = new Modbus.ServerSerial(
+    vector,
+    {
+        port: params.serialport,
+        baudRate: params.baudRate,
+        parity: params.parity,
+        dataBits: params.dataBits,
+        stopBits: params.stopBits,
+        debug: true,
+        unitID: parseInt(params.unitID),
+    }
+    );
+    plugin.log("ServerRTU")
+    serverSerial.on("socketError", function (err) {
+      plugin.log("socketError " + err, 1);
+    });
+    serverSerial.on("initialized", function() {
+      plugin.log("initialized");
+    });
+
+    serverSerial.on("socketError", function(err) {
+        plugin.log(err);
+        serverSerial.close(closed);
+    });
+  }
+  
 
   process.on('exit', terminate);
   process.on('SIGTERM', () => {
