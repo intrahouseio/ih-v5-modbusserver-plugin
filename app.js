@@ -16,42 +16,42 @@ module.exports = function (plugin) {
     plugin.onSub('devices', filter, data => {
       data.forEach(item => {
         let curitem = item.did + '.' + item.prop;
-        if (filter[curitem].fcr == '1') {
-          setBit(coilBuffer, filter[curitem].address, item.value);
-        }
+        if (item.value != undefined) {
+          if (filter[curitem].fcr == '1') {
+            setBit(coilBuffer, filter[curitem].address, item.value);
+          }
+          if (filter[curitem].fcr == '2') {
+            setBit(discreteBuffer, filter[curitem].address, item.value);
+          }
+          if (filter[curitem].fcr == '3') {
+            if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
+              writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
+            }
+            if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
+              writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
+            }
+            if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
+              writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
+            }
+            if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
+              writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
+            }
+          }
 
-        if (filter[curitem].fcr == '2') {
-          setBit(discreteBuffer, filter[curitem].address, item.value);
-        }
-
-        if (filter[curitem].fcr == '3') {
-          if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
-            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
+          if (filter[curitem].fcr == '4') {
+            if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
+              writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
+            }
+            if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
+              writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
+            }
+            if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
+              writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
+            }
+            if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
+              writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
+            }
           }
-          if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
-            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
-          }
-          if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
-            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
-          }
-          if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
-            writeBuffer(holdingBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
-          } 
-        }
-        
-        if (filter[curitem].fcr == '4') {
-          if (filter[curitem].vartype == 'int8' || filter[curitem].vartype == 'uint8') {
-            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo8);
-          }
-          if (filter[curitem].vartype == 'int16' || filter[curitem].vartype == 'uint16') {
-            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo16);
-          }
-          if (filter[curitem].vartype == 'float' || filter[curitem].vartype == 'int32' || filter[curitem].vartype == 'uint32') {
-            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo32);
-          }
-          if (filter[curitem].vartype == 'double' || filter[curitem].vartype == 'int64' || filter[curitem].vartype == 'uint64') {
-            writeBuffer(inputBuffer, filter[curitem].address, filter[curitem].vartype, item.value, params.bo64);
-          } 
         }
       });
       plugin.log("data" + util.inspect(data), 2);
@@ -121,15 +121,15 @@ module.exports = function (plugin) {
       }
     },
 
-    setRegister: function (address, value, unitId) {  
+    setRegister: function (address, value, unitId) {
       plugin.log('SetRegister ' + address + ' value: ' + value + ' unitId: ' + unitId, 2);
       if (params.unitID == unitId) {
         const addr = '3.' + address;
         holdingBuffer.writeUInt16BE(value, address * bufferFactor);
-        if (filter[addr] != undefined && (filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8' )) {
+        if (filter[addr] != undefined && (filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8')) {
           plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: readBuffer(holdingBuffer, filter[addr].address, filter[addr].vartype, params.bo8) });
         }
-        if (filter[addr] != undefined && (filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16' )) {
+        if (filter[addr] != undefined && (filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16')) {
           plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: readBuffer(holdingBuffer, filter[addr].address, filter[addr].vartype, params.bo16) });
         }
       }
@@ -142,12 +142,12 @@ module.exports = function (plugin) {
           holdingBuffer.writeUInt16BE(value[i], (address + i) * bufferFactor);
         }
         for (let i = 0; i < value.length; i++) {
-          let curaddr = address+i;
+          let curaddr = address + i;
           let addr = '3.' + curaddr;
-          if (filter[addr] != undefined && (filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8' )) {
+          if (filter[addr] != undefined && (filter[addr].vartype == 'int8' || filter[addr].vartype == 'uint8')) {
             plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: readBuffer(holdingBuffer, filter[addr].address, filter[addr].vartype, params.bo8) });
           }
-          if (filter[addr] != undefined && (filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16' )) {
+          if (filter[addr] != undefined && (filter[addr].vartype == 'int16' || filter[addr].vartype == 'uint16')) {
             plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: readBuffer(holdingBuffer, filter[addr].address, filter[addr].vartype, params.bo16) });
           }
           if (filter[addr] != undefined && (filter[addr].vartype == 'float' || filter[addr].vartype == 'int32' || filter[addr].vartype == 'uint32')) {
@@ -156,11 +156,11 @@ module.exports = function (plugin) {
           if (filter[addr] != undefined && (filter[addr].vartype == 'double' || filter[addr].vartype == 'int64' || filter[addr].vartype == 'uint64')) {
             plugin.send({ type: 'command', command: 'setval', did: filter[addr].did, prop: filter[addr].prop, value: readBuffer(holdingBuffer, filter[addr].address, filter[addr].vartype, params.bo64) });
           }
-        }   
+        }
       }
     }
 
-    
+
   };
 
   // set the server to answer for modbus requests
@@ -174,8 +174,8 @@ module.exports = function (plugin) {
   }
   if (params.transport == 'rtu') {
     const serverSerial = new Modbus.ServerSerial(
-    vector,
-    {
+      vector,
+      {
         port: params.serialport,
         baudRate: params.baudRate,
         parity: params.parity,
@@ -183,22 +183,22 @@ module.exports = function (plugin) {
         stopBits: params.stopBits,
         debug: true,
         unitID: parseInt(params.unitID),
-    }
+      }
     );
     plugin.log("ServerRTU")
     serverSerial.on("socketError", function (err) {
       plugin.log("socketError " + err, 1);
     });
-    serverSerial.on("initialized", function() {
+    serverSerial.on("initialized", function () {
       plugin.log("initialized");
     });
 
-    serverSerial.on("socketError", function(err) {
-        plugin.log(err);
-        serverSerial.close(closed);
+    serverSerial.on("socketError", function (err) {
+      plugin.log(err);
+      serverSerial.close(closed);
     });
   }
-  
+
 
   process.on('exit', terminate);
   process.on('SIGTERM', () => {
