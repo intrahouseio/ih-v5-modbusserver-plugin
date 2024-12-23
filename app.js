@@ -207,7 +207,7 @@ module.exports = function (plugin) {
   });
 
   function terminate() {
-    console.log('TERMINATE PLUGIN');
+    plugin.log('TERMINATE PLUGIN');
     // Здесь закрыть все что нужно
   }
 

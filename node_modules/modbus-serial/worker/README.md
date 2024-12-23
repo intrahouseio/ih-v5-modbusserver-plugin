@@ -1,3 +1,9 @@
+#### See also modbusdb
+
+The worker class is a simple class that makes it easy to grab some data from device, for a more complete module see modbusdb https://github.com/yarosdev/modbusdb
+
+------------
+
 #### What can I do with this module ?
 
 This class makes it easy to grab some data from device.
